@@ -124,8 +124,7 @@ def client_handler(connection):
     dt = 0
     player = Player(connection, default_gun)
     players.append(player)
-
-    while True:
+    while connection:
         # thisis boundaries
         if player.position[0] > max_game_width:
             player.position[0] = max_game_width
@@ -136,8 +135,11 @@ def client_handler(connection):
         elif player.position[1] < 0:
             player.position[1] = 0
 
-        # thisis calculation
+        # thisis sockets
         received = connection.recv(1024)
+        if len(received) < 1:
+            players.remove(player)
+            break
         if received[0] == 1:
             player.position[1] -= player.speed * dt
         if received[1] == 1:
@@ -149,16 +151,11 @@ def client_handler(connection):
         if received[4] == 1:
             bullets.append(Bullet(player, player.gun))
 
-        # thisis socket stuff
-        packet = bytearray(player.position[0])
-        packet.append(player.position[1])
-        packet.append(255)
-
+        packet = bytearray(struct.pack('<2f', player.position[0], player.position[1]))
         for p in players:
-            packet.extend(b'\FF\\')
-            packet.extend(struct.pack('<2f', p.position[0], p.position[1]))
-            # todo change the way how packets work - append instead of adding the byte value together
-            #  like an integer
+            if p is not player:  # append all other players that are not the current client in this  # optimize
+                packet.extend(b'\FF')
+                packet.extend(struct.pack('<2f', p.position[0], p.position[1]))
         connection.sendall(bytes(packet))
         dt = clock.tick(FPS) / 1000
 

@@ -10,10 +10,9 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_data = bytearray()
 
 
-def connection(IP, username):
+def connection(IP):
     try:
         s.connect((IP, PORT))
-        s.sendall(bytes(username, 'utf-8'))
     except Exception as e:
         exit(e)
 
@@ -25,6 +24,8 @@ screen = pygame.display.set_mode((400, 400))
 clock = pygame.time.Clock()
 FPS = 240
 dt = 0
+pygame.mouse.set_visible(False)
+players = []
 
 red = (255, 0, 0)
 blue = (0, 255, 0)
@@ -35,9 +36,8 @@ black = (0, 0, 0)
 
 
 class Player:
-    def __init__(self, gun):
+    def __init__(self):
         self.position = [0, 0]
-        self.gun = gun
         self.size = 30
         self.speed = 300
         self.cursorsize = 6
@@ -49,8 +49,8 @@ class Player:
         pygame.draw.circle(screen, black, (self.position[0] + self.offsetx, self.position[1] + self.offsety), self.size)
 
 
-player = Player([300, 300])
-connection(IP, "Player")
+player = Player()
+connection(IP)
 
 
 def network_handling():
@@ -85,15 +85,22 @@ while running:
 
     # thisis socket info
     s.sendall(bytes(request))
-    print(server_data, '\n')
     try:
-        player.position = struct.unpack('<2f', server_data)
-    except struct.error:
+        player.position = struct.unpack('<2f', (server_data[0:8]))
+    except struct.error as e:
+        print(e)
         pass
+    server_data_1 = server_data[8:].split(b"\FF")
+    for i in server_data_1[1:]:
+        players.append(Player())
+        players[-1].position = struct.unpack('<2f', i)
     # thisis rendering
     screen.fill(white)
     player.update()  # todo make a camera that offsets everything in the world
     #                    ie make a "real" coordinates and a rendered coordinates
+    for p in players:
+        p.update()
+    players = []
     pygame.draw.circle(screen, red, (pygame.mouse.get_pos()), player.cursorsize, width=2)
     pygame.display.flip()
     dt = clock.tick(FPS) / 1000
