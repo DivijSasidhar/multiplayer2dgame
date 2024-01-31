@@ -60,7 +60,7 @@ def network_handling():
 
 
 start_new_thread(network_handling, ())
-request = [False, False, False, False,  # w, a, s, d pushed    # todo optimize by only updating what has changed
+request = [False, False, False, False,  # w, a, s, d pushed    # optimize by only updating what has changed
            False,  # button down / button up
            False, False, False]
 
